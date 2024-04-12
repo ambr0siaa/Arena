@@ -1,6 +1,6 @@
 #include "arena.h"
 
-// Test data strcuter for arena
+// Test data strcture for arena
 typedef struct foo {
     struct foo* next;
     int data;
