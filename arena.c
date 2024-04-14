@@ -79,10 +79,9 @@ void arena_free(Arena *arena)
 {
     Region *cur = arena->head;
     while (cur != NULL) {
-        cur->capacity = 0;
-        cur->alloc_pos = 0;
-        Region *copy = cur;
-        cur = cur->next;
-        free(copy);
+        Region *next = cur->next;
+        free(cur->data);
+        free(cur);
+        cur = next;
     }
 }
