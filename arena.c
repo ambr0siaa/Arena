@@ -19,21 +19,23 @@ void *arena_alloc_aligned(Arena *arena, size_t size, size_t alignment)
 
     Region *cur = arena->head;
     while (1) {
+        char *ptr = (char*)((size_t)(cur->data + cur->alloc_pos + (alignment - 1)) & ~(alignment - 1));
+        size_t real_size = (size_t)((ptr + size) - (cur->data + cur->alloc_pos));
+
         if (cur->alloc_pos + size > cur->capacity) {
             if (cur->next != NULL) {
                 cur = cur->next;
                 continue;
             } else {
-                Region *r = region_create(ARENA_CMP(size));
+                Region *r = region_create(ARENA_CMP(size + (alignment -1)));
                 arena->tail->next = r;
                 arena->tail = r;
                 cur = arena->tail;
                 continue;
             }
         } else {
-            size_t align_size = ARENA_ALIGN(size, alignment);
-            void *ptr = (void*)(cur->data + cur->alloc_pos + align_size);
-            cur->alloc_pos += align_size;
+            memset(ptr, 0, real_size);
+            cur->alloc_pos += real_size;
             return ptr;
         }
     }
@@ -80,7 +82,6 @@ void arena_free(Arena *arena)
     Region *cur = arena->head;
     while (cur != NULL) {
         Region *next = cur->next;
-        free(cur->data);
         free(cur);
         cur = next;
     }
