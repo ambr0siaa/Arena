@@ -1,6 +1,6 @@
 #include "arena.h"
 
-// Test data structure for arenastruct 
+// Test data structure for arena
 typedef struct Tree Tree;
 
 struct Tree {
