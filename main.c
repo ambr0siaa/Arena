@@ -1,60 +1,57 @@
 #include "arena.h"
 
-// Test data strcture for arena
-typedef struct foo {
-    struct foo* next;
-    int data;
-} Foo;
+// Test data structure for arenastruct 
+typedef struct Tree Tree;
 
-typedef struct {
-    Foo *head;
-    Foo *tail;
-    size_t count;
-} Foo_List;
+struct Tree {
+    char data;
+    Tree *left;
+    Tree *right;
+};
 
-void foo_push(Arena *arena, Foo_List* list, int data)
+Tree *generate_tree(Arena *arena, size_t level_cur, size_t level_max)
 {
-    Foo *fo = arena_alloc(arena, sizeof(Foo));
-    fo->data = data;
-    fo->next = NULL;
-
-    if (!list->tail) {
-        list->head = fo;
-        list->tail = fo;
-        list->count += 1;
+    if (level_cur < level_max) {
+        Tree *tree = arena_alloc(arena, sizeof(Tree));
+        tree->data = level_cur + 'a'; 
+        tree->left = generate_tree(arena, level_cur + 1, level_max);
+        tree->right = generate_tree(arena, level_cur + 1, level_max);
+        return tree;
     } else {
-        list->tail->next = fo;
-        list->tail = fo;
-        list->count += 1;
+        return NULL;
     }
 }
 
-void foo_print(Foo_List* list)
+#define TAB(iter)                            \
+    do {                                     \
+        for (size_t j = 0; j < (iter); ++j)  \
+            printf("    ");                  \
+    } while (0)
+
+void tree_dump(Tree *tree, size_t level)
 {
-    Foo *cur = list->head;
-    while (cur != NULL) {
-        printf("data: %d\n", cur->data);
-        cur = cur->next;
+    if (level == 0)
+        printf("root: '%c'\n", tree->data);
+
+    if (tree->right) {
+        TAB(level + 1);
+        printf("right: '%c'\n", tree->right->data);
+        tree_dump(tree->right, level + 1);
     }
-    printf("\n");
+
+    if (tree->left) {
+        TAB(level + 1);
+        printf("left: '%c'\n", tree->left->data);
+        tree_dump(tree->left, level + 1);
+    }
 }
 
-// Test foo
+// Test data structure
 void test0()
 {
     Arena arena = {0};
-
-    Foo_List foo = {0};
-
-    foo_push(&arena, &foo, 12);
-    foo_push(&arena, &foo, 122);
-    foo_push(&arena, &foo, 1);
-    foo_push(&arena, &foo, 13);
-    foo_push(&arena, &foo, 1765);
-    foo_push(&arena, &foo, 16);
-    foo_push(&arena, &foo, 11);
-    foo_print(&foo);
-
+    Tree *tree = generate_tree(&arena, 0, 4);
+    tree_dump(tree, 0);
     arena_dump(&arena);
     arena_free(&arena);
 }
@@ -74,6 +71,6 @@ void test1()
 
 int main()
 {
-    test1();
+    test0();
     return 0;
 }

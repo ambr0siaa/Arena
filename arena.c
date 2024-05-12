@@ -1,44 +1,45 @@
 #include "arena.h"
 
-Region *region_create(size_t capacity)
+Region *region_create(size_t region_size)
 {
-    Region *region = malloc(sizeof(Region));
-    region->capacity = capacity;
-    region->alloc_pos = 0;
-    region->data = malloc(sizeof(void*) * region->capacity);
-    return region;
+    Region *r = malloc(sizeof(Region));
+	r->data = malloc(region_size);
+	r->capacity = region_size;
+	r->alloc_pos = 0;
+	r->next = NULL;
+	return r;
 }
 
 void *arena_alloc_aligned(Arena *arena, size_t size, size_t alignment)
 {
-    if (arena->head == NULL && arena->tail == NULL) {
-        Region *r = region_create(ARENA_CMP(size));
-        arena->head = r;
-        arena->tail = r;
-    }
+    size_t align_size = (size + (alignment - 1)) & ~(alignment - 1);
+	
+	if (arena->head == NULL && arena->tail == NULL) {
+		Region* r = region_create(ARENA_CMP(align_size));
+		arena->head = r;
+		arena->tail = r;
+	}
 
-    Region *cur = arena->head;
-    while (1) {
-        char *ptr = (char*)((size_t)(cur->data + cur->alloc_pos + (alignment - 1)) & ~(alignment - 1));
-        size_t real_size = (size_t)((ptr + size) - (cur->data + cur->alloc_pos));
+	Region* cur = arena->head;
+	while (1) {
+		if (cur == NULL) {
+			Region* r = region_create(ARENA_CMP(align_size));
+			arena->tail->next = r;
+			arena->tail = r;
+			cur = arena->tail;
+		}
 
-        if (cur->alloc_pos + size > cur->capacity) {
-            if (cur->next != NULL) {
-                cur = cur->next;
-                continue;
-            } else {
-                Region *r = region_create(ARENA_CMP(size + (alignment -1)));
-                arena->tail->next = r;
-                arena->tail = r;
-                cur = arena->tail;
-                continue;
-            }
-        } else {
-            memset(ptr, 0, real_size);
-            cur->alloc_pos += real_size;
-            return ptr;
-        }
-    }
+		if (cur->alloc_pos + align_size <= cur->capacity) {
+			char* ptr = (char*)(cur->data + cur->alloc_pos);
+			memset(ptr, 0, align_size);
+			cur->alloc_pos += align_size;
+			return ptr;
+			
+		} else {
+			cur = cur->next;
+			continue;
+		}
+	}
 }
 
 void *arena_alloc(Arena *arena, size_t size)
@@ -82,6 +83,7 @@ void arena_free(Arena *arena)
     Region *cur = arena->head;
     while (cur != NULL) {
         Region *next = cur->next;
+        free(cur->data);
         free(cur);
         cur = next;
     }
