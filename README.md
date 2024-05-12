@@ -1,6 +1,6 @@
 # Arena Allocator
 
-Simple linear allocater as a learning project.
+Simple linear allocater as a learning project. This project also implemted for my [virtual machine](https://github.com/ambr0siaa/LunaVM)
 
 ## API
 
